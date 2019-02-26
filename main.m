@@ -63,6 +63,8 @@ for folder = folders'
 
     close all;
     file_path = fullfile(file.folder, file.name)
+    % file_path = 'C:\Users\danie\Documents\CCM\LaurenErdman\Left-Right-Sagittal-Transverse-Only\D2565665_1\1.2.392.200036.9116.7.8.6.41516130.2.0.215143686971297\00028_1.2.392.200036.9116.7.8.6.41516130.5.0.540576524893059-lt-trans.dcm'
+    % file_path =            'C:\Users\danie\Documents\CCM\LaurenErdman\Left-Right-Sagittal-Transverse-Only\D2675809_2\00029_1.2.840.113663.1500.1.298958709.3.29.20160831.93635.656-lt-trans.dcm'
     orig_img = dicomread(file_path);
     img = orig_img;
     img_size_y = size(img,1);
@@ -198,7 +200,7 @@ for folder = folders'
     % Keep only central centroids
     centroid_filtered_im = size_filtered_im;
     if ~isempty(stats)
-      reject_idx = find(stats.Centroid(:,2) < img_size_y * 0.25 | stats.Centroid(:,2) > img_size_y * 0.65 | stats.Centroid(:,1) < img_size_x * 0.29 | stats.Centroid(:,1) > img_size_x * 0.65 ); % 29 becouse there is info on the right, 25 because there is a lot of detail at the top. Any larger numbers and too many objects would be filtered
+      reject_idx = find(stats.Centroid(:,2) < img_size_y * 0.33 | stats.Centroid(:,2) > img_size_y * 0.65 | stats.Centroid(:,1) < img_size_x * 0.33 | stats.Centroid(:,1) > img_size_x * 0.65 );
       centroid_filtered_im(ismember(centroid_filtered_im,reject_idx))=0;
       if ismember(debug_level,{'All'})
         f = figure(5012); clf; set(f,'name','centroid_filt','NumberTitle', 'off')
@@ -259,6 +261,12 @@ for folder = folders'
       end
     end
 
+    % Calculate mean intensity for inner box area
+    y_dim_box = floor([img_size_y * 0.35 : img_size_y * 0.65]);
+    x_dim_box = floor([img_size_x * 0.35 :  img_size_x * 0.65]);
+    img_box = img(x_dim_box,y_dim_box);
+    mean(img_box(:));
+
     % Save Stats (Metadata)
     ThisResult = table();
     ThisResult.PatientMDR = {folder_name};
@@ -267,6 +275,7 @@ for folder = folders'
     ThisResult.NumObjectsAll = max(max(labelled_img_all));
     ThisResult.TotalAreaAll = sum(sum(labelled_img_all>0));
     ThisResult.MeanIntensityAll = mean(img(labelled_img_all>0));
+    ThisResult.MeanIntensityInnerBox = mean(img_box(:));
     % Save Stats (Desease)
     ThisResult.NumObjectsSuspect = max(max(labelled_img_disease));
     ThisResult.TotalAreaSuspect = sum(sum(labelled_img_disease>0));
@@ -298,8 +307,9 @@ for folder = folders'
     % Store
     ResultTable(height(ResultTable)+1,:) = ThisResult;
        
-    break
+    % break
   end
+  % break
 end
 % Save to disk
 
